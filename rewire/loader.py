@@ -25,6 +25,8 @@ class LoaderModule(Module):
         return self
 
     def _load(self):
+        from rewire.plugins import PluginConfig
+
         while self.queue:
             module = self.queue.pop()
 
@@ -35,6 +37,11 @@ class LoaderModule(Module):
                     loc.is_dir() and (loc / "__init__.py").exists()
                 ):
                     self.load_file(module, file)
+
+            if (directory_config := dir / ".plugin.yaml").exists():
+                config = PluginConfig.model_validate(parse_file(directory_config, True))
+                for include in config.include:
+                    self.queue.append(f"{module}.{include}")
 
     def load_file(self, module: str, file: str):
         file = file.removesuffix(".py")
