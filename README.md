@@ -32,3 +32,8 @@ Easily manage the lifecycles of components with Rewire's robust start/stop manag
 
 Rewire is designed to be both extensible and hackable, enabling developers to tailor the framework to their specific needs. Customize components, add new features, or integrate Rewire with other
 libraries as desired, making it a powerful choice for any project.
+
+
+## Examples
+
+* [Simple FastAPI app](https://github.com/rewirepy/example-fastapi)
