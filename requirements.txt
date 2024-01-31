@@ -1,0 +1,8 @@
+anyio
+graphviz
+loguru
+pydantic
+pytest
+pytest-anyio
+trio
+pyyaml
