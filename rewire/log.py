@@ -1,4 +1,3 @@
-from abc import abstractmethod
 from datetime import time, timedelta
 import logging
 from os import PathLike
@@ -94,15 +93,14 @@ class FileSink(BaseSink):
 class RuntimeSink(BaseSink):
     @property
     def sink(self):
-        return self.getSink()
+        return self.get_sink()
 
-    @abstractmethod
-    def getSink(self):
-        ...
+    def get_sink(self):
+        raise NotImplementedError()
 
 
 class StdoutSink(RuntimeSink):
-    def getSink(self):
+    def get_sink(self):
         return sys.stdout
 
 
@@ -139,7 +137,9 @@ def showwarning(
 
 
 class LoggerConfig(BaseModel):
-    sinks: List[PythonSink | FileSink | StdoutSink | RuntimeSink] = []
+    sinks: List[PythonSink | FileSink | StdoutSink | RuntimeSink] = [
+        StdoutSink(level="info")
+    ]
     patch_builtins: bool = True
     register_stop: bool = True
 
