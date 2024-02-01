@@ -22,6 +22,7 @@ import warnings
 import loguru
 import builtins
 from pydantic import BaseModel
+from rewire.config import config
 from rewire.lifecycle import LifecycleModule
 from rewire.space import Module
 
@@ -137,27 +138,38 @@ def showwarning(
     logger.opt(depth=2).warning(msg)
 
 
-class LoggerModule(Module):
+class LoggerConfig(BaseModel):
     sinks: List[PythonSink | FileSink | StdoutSink | RuntimeSink] = []
     patch_builtins: bool = True
     register_stop: bool = True
 
+
+class LoggerModule(Module):
+    _config: LoggerConfig | None = None
+
+    @property
+    def config(self):
+        if self._config is None:
+            self._config = config(LoggerConfig)
+        return self._config
+
     def setup(self):
-        logger.remove()
-        for sink in self.sinks:
+        if self.config.sinks:
+            logger.remove()
+        for sink in self.config.sinks:
             logger.add(
                 sink.sink,  # type: ignore
                 **sink.model_dump(exclude={"kwargs", "sink"}, exclude_none=True),
                 **sink.kwargs,
             )
 
-        if self.patch_builtins:
+        if self.config.patch_builtins:
             builtins.print = log_print
             warnings.showwarning = showwarning
 
-        if self.register_stop:
+        if self.config.register_stop:
             LifecycleModule.get().on_stop(self.stop)
-            self.register_stop = False
+            self.config.register_stop = False
 
         return self
 
@@ -166,7 +178,7 @@ class LoggerModule(Module):
         *sink: PythonSink | FileSink | StdoutSink | RuntimeSink,
         setup: bool = True,
     ):
-        self.sinks.extend(sink)
+        self.config.sinks.extend(sink)
         if setup:
             self.setup()
         return self
