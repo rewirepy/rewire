@@ -91,6 +91,7 @@ class StagesModule(Dependencies, Module):
 class Plugin(Dependencies):
     _stages: ClassVar[dict[int, tuple[StageStart, StageEnd]]] = {}
     name: str
+    loc: Path | None = None
     conditions: list[str] = []
 
     def setup(
@@ -136,6 +137,8 @@ class Plugin(Dependencies):
         return PluginConfig.model_validate(parse_file(self.config_path(), True))
 
     def location(self):
+        if self.loc:
+            return self.loc
         if self.name == ".":
             return Path(root_dir)
         return Path(root_dir, *self.name.split("."))
@@ -156,18 +159,24 @@ class Plugin(Dependencies):
         return dependency
 
 
-def simple_plugin(name: str | None = None, load: bool = True, bind: bool = True):
+def simple_plugin(
+    name: str | None = None,
+    load: bool = True,
+    bind: bool = True,
+    loc: Path | None = None,
+):
     if not name:
         name = "unknown"
         for i in range(1, 10):
             try:
                 name = inspect.stack()[i][0].f_globals["__name__"]
+                loc = inspect.stack()[i][0].f_globals["__file__"]
                 break
             except KeyError:
                 continue
     assert isinstance(name, str)
 
-    plugin = Plugin(name=name)
+    plugin = Plugin(name=name, loc=loc)
     with suppress(LookupError):
         plugin.children.append(StagesModule.get())
         plugin.conditions.append("stages")
