@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rewire"
-version = "0.3.1"
+version = "0.4.0"
 description = "A Streamlined Type-Based Dependency Injection Framework"
 readme = "README.md"
 authors = [{ name = "Ivan Vozhakov", email = "gou177@bk.ru" }]

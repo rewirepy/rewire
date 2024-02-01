@@ -153,6 +153,9 @@ class LoggerModule(Module):
             self._config = config(LoggerConfig)
         return self._config
 
+    def init(self):
+        self.setup()
+
     def setup(self):
         if self.config.sinks:
             logger.remove()
