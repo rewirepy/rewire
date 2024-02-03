@@ -105,18 +105,6 @@ async def str_consumer2(
 In this example, we demonstrate how to automatically inject dependencies using annotations. We define three functions (`str_wrapper`, `str_consumer`, and `str_consumer2`) that have dependencies injected
 using Rewire's `@InjectedDependency` decorator. The `str_factory` dependency is defined as a simple factory function and can be automatically injected into any other dependency function with `Annotated`.
 
-## Dependency signature breakdown
-
-The `Dependency` constructor accepts the following optional parameters:
-
-- `id` (default generated using `uuid4()`): UUID of this dependency.
-- `type`: type of this dependency.
-- `type_constructor`: a flag indicating whether this dependency creates a new type or just wraps an existing one.
-- `cb`: the callback function that runs this dependency.
-- `dependencies`: list of dependencies that are required to execute this dependency.
-- `priority`: priority level, lower numbers run first.
-- `optional`: if True, will skip running this dependency instead of raising an exception when unable to get dependencies.
-
 ## Solving Dependencies
 
 ### Constructing Dependencies

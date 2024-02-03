@@ -70,11 +70,17 @@ class Dependency[T](DependencyRef):
     state: Literal[
         "pending", "linked", "waiting", "running", "done", "skipped"
     ] = "pending"
-    type: Any = None
+    # type of this dependency. (for by type injection)
+    type: Any = None 
+    # a flag indicating whether this dependency creates a new type or just wraps an existing one.
     type_constructor: bool = True
+    # the callback function that runs this dependency.
     cb: Callable[[], Awaitable[T]] = noop  # type: ignore
+    # list of dependencies that are required to run before executing this dependency.
     dependencies: list[DependencyRef | TypeRef] = []
+    # lower numbers run first.
     priority: int = 0
+    # skip running this dependency instead of raising an exception when unable to resolve dependencies.
     optional: bool = False
 
     _event: Event | None = PrivateAttr(None)
