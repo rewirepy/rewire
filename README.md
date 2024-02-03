@@ -8,7 +8,7 @@ Install Rewire using pip: `pip install rewire`
 
 ## Key Features and Benefits
 
-### [Dependency Injection](../docs/dependency_injection.md)
+### [Dependency Injection](./docs/dependency_injection.md)
 
 Employ Rewire's advanced type-based dependency injection system to automatically manage the instantiation, configuration, and resolution of components in your application. This lets you concentrate on
 developing functionality without being bogged down by dependency management.
