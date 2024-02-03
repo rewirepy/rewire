@@ -1,4 +1,3 @@
-
 # Rewire: A Streamlined Type-Based Dependency Injection Framework for Focused Development
 
 Rewire is a user-friendly framework dedicated to type-based dependency injection, allowing developers to focus on writing code rather than dealing with boilerplate.
@@ -9,7 +8,7 @@ Install Rewire using pip: `pip install rewire`
 
 ## Key Features and Benefits
 
-### Dependency Injection
+### [Dependency Injection](../blob/master/docs/dependency_injection.md)
 
 Employ Rewire's advanced type-based dependency injection system to automatically manage the instantiation, configuration, and resolution of components in your application. This lets you concentrate on
 developing functionality without being bogged down by dependency management.
@@ -32,7 +31,6 @@ Easily manage the lifecycles of components with Rewire's robust start/stop manag
 
 Rewire is designed to be both extensible and hackable, enabling developers to tailor the framework to their specific needs. Customize components, add new features, or integrate Rewire with other
 libraries as desired, making it a powerful choice for any project.
-
 
 ## Examples
 
