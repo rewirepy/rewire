@@ -23,7 +23,7 @@ while maintaining flexibility.
 Automatically import required files based on defined configurations within your Rewire-powered application. Keep your project organized by trusting Rewire to handle file imports, promoting code
 reusability and minimizing potential errors.
 
-### Lifecycle Manager
+### [Lifecycle Manager](./docs/lifecycle.md)
 
 Easily manage the lifecycles of components with Rewire's robust start/stop manager. Control the initialization and disposal of resources efficiently, ensuring optimal resource usage.
 
