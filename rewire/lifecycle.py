@@ -3,7 +3,15 @@ from anyio.abc._tasks import TaskGroup
 from functools import partial
 from inspect import iscoroutinefunction
 import threading
-from typing import Any, Awaitable, Callable, Coroutine, List, overload
+from typing import (
+    Any,
+    AsyncContextManager,
+    Awaitable,
+    Callable,
+    Coroutine,
+    List,
+    overload,
+)
 import anyio
 
 from pydantic import PrivateAttr
@@ -11,28 +19,11 @@ from pydantic import PrivateAttr
 from loguru import logger
 from anyio.from_thread import run as run_async
 from anyio.to_thread import run_sync
-from rewire.context import CTX
 
-from rewire.space import Module
+from rewire.space import Module, MultiAsyncContextManager
 
 UNSET = object()
 Callback = Callable[[], Any]
-
-
-class GlobalTaskGroup:
-    ctx = CTX()
-    group: TaskGroup
-
-    @asynccontextmanager
-    async def use(self):
-        async with anyio.create_task_group() as tg:
-            with self.ctx.use():
-                self.group = tg
-                yield tg
-
-    @classmethod
-    def get(cls):
-        return cls.ctx.get().group
 
 
 class LifecycleModule(Module):
@@ -44,19 +35,24 @@ class LifecycleModule(Module):
     _running: dict[int, Awaitable | Callable] = PrivateAttr(default_factory=dict)
     _is_running: bool = PrivateAttr(False)
     _group: TaskGroup = PrivateAttr()
+    _context_managers: list[AsyncContextManager] = PrivateAttr(default_factory=list)
 
     cancel_on_stop: bool = True
     stop_on_err: bool = True
 
-    def run(self, target: Callable[[], Any] | Coroutine | Awaitable):
+    def run[T: Callable[[], Any] | Coroutine | Awaitable](self, target: T):
         """Start in non daemon thread if not async else run in main thread"""
+
         if not isinstance(target, Coroutine | Awaitable):
-            target = run_sync(partial(self.runner, target))
+            cb = run_sync(partial(self.runner, target))  # type: ignore
+        else:
+            cb = target
 
         if self._is_running:
-            self._group.start_soon(self.async_runner, target)
+            self._group.start_soon(self.async_runner, cb)
         else:
-            self._coroutines.append(target)
+            self._coroutines.append(cb)
+        return target
 
     @property
     def running(self):
@@ -74,14 +70,15 @@ class LifecycleModule(Module):
             logger.info("Starting...")
             self._stopEvent.clear()
 
-        async with anyio.create_task_group() as group:
-            for coro in self._coroutines:
-                group.start_soon(self.async_runner, coro)
+        async with MultiAsyncContextManager(self._context_managers):
+            async with anyio.create_task_group() as group:
+                for coro in self._coroutines:
+                    group.start_soon(self.async_runner, coro)
 
-            self._group = group
+                self._group = group
 
-        if run_stop:
-            await self.stop()
+            if run_stop:
+                await self.stop()
 
     def runner(self, target: Callable[[], Any]):
         try:
@@ -159,7 +156,7 @@ class LifecycleModule(Module):
 
         return self._stoppedEvent
 
-    @asynccontextmanager
-    async def use_module(self):
-        async with GlobalTaskGroup().use():
-            yield
+    def contextmanager[T: AsyncContextManager](self, contextmanager: T):
+        assert not self._running, "Unable to add contextmanager to running lifecycle"
+        self._context_managers.append(contextmanager)
+        return contextmanager
