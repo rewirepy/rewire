@@ -281,3 +281,16 @@ async def test_linked():
     await deps.solve()
 
     assert did_run
+
+
+@pytest.mark.anyio
+async def test_bind():
+    async def foo():
+        return 1
+
+    a = Dependency(cb=foo)
+
+    deps = Dependencies()
+    deps.bind(a)
+
+    await deps.solve()

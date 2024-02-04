@@ -3,11 +3,11 @@ from functools import partial, wraps
 import inspect
 import os
 from pathlib import Path
-from typing import Awaitable, Callable, ClassVar, Type
+from typing import Awaitable, Callable, ClassVar
 
 from anyio.to_thread import run_sync
 from pydantic import BaseModel
-from rewire.config import ConfigDependency, parse_file
+from rewire.config import parse_file
 
 from rewire.dependencies import (
     AnyRef,
@@ -151,12 +151,6 @@ class Plugin(Dependencies):
             return self.location() / ".plugin.yaml"
 
         return self.location().parent / f"{self.short_name()}.plugin.yaml"
-
-    def bind[C: Type[ConfigDependency] | Dependency](self, dependency: C) -> C:
-        if isinstance(dependency, Dependency):
-            return super().bind(dependency)
-        super().bind(dependency.dependency)
-        return dependency
 
 
 def simple_plugin(

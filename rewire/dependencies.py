@@ -7,6 +7,7 @@ from typing import (
     Awaitable,
     Callable,
     Literal,
+    Protocol,
     Self,
     Type,
     get_args,
@@ -71,7 +72,7 @@ class Dependency[T](DependencyRef):
         "pending", "linked", "waiting", "running", "done", "skipped"
     ] = "pending"
     # type of this dependency. (for by type injection)
-    type: Any = None 
+    type: Any = None
     # a flag indicating whether this dependency creates a new type or just wraps an existing one.
     type_constructor: bool = True
     # the callback function that runs this dependency.
@@ -145,6 +146,13 @@ class Dependency[T](DependencyRef):
 
     def pretty(self):
         return self.label or f"{type(self)} ({self.id})"
+
+    def __dependency__(self):
+        return self
+
+
+class Dependable[T](Protocol):
+    __dependency__: Callable[[], Dependency[T]]
 
 
 class InjectedDependency[T, **P](Dependency[T]):
@@ -290,15 +298,19 @@ class Dependencies(BaseModel):
 
         return result
 
-    def add(self, dependencies: "Dependencies"):
-        self.children.append(dependencies)
+    def add(self, *dependencies: "Dependencies | Dependency | Dependable"):
+        for dep in dependencies:
+            if isinstance(dep, Dependencies):
+                self.children.append(dep)
+            else:
+                self.bind(dep)
         return self
 
     def resolve[T](self, type: Type[T]) -> T:
         return self._by_type[type]._result
 
-    def bind[T: Dependency](self, dependency: T) -> T:
-        self.dependencies.append(dependency)
+    def bind[T: Dependency | Dependable](self, dependency: T) -> T:
+        self.dependencies.append(dependency.__dependency__())
         return dependency
 
     def rebuild(self, clone_all: bool = True, inplace: bool = False):

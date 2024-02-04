@@ -415,3 +415,7 @@ class ConfigDependency(BaseModel):
     @classmethod
     def Value(cls) -> Type[Self]:
         return Annotated[cls, TypeRef(type=cls)]
+
+    @classmethod
+    def __dependency__(cls):
+        return cls.dependency
