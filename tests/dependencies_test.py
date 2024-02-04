@@ -294,3 +294,4 @@ async def test_bind():
     deps.bind(a)
 
     await deps.solve()
+    assert a._result == 1
