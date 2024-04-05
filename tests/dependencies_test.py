@@ -48,6 +48,29 @@ async def test_duplicate():
 
 
 @pytest.mark.anyio
+async def test_multiple_solve():
+    count = 0
+
+    async def foo():
+        nonlocal count
+        count += 1
+        return count
+
+    async def bar():
+        return a._result
+
+    a = Dependency(cb=foo)
+
+    deps = Dependencies(dependencies=[a])
+    await deps.solve()
+
+    b = Dependency(dependencies=[a], cb=bar)
+    await deps.add(b).solve()
+
+    assert a._result == b._result == count == 1
+
+
+@pytest.mark.anyio
 async def test_unrelated():
     async def foo():
         return 1
