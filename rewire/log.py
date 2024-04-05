@@ -107,11 +107,11 @@ class StdoutSink(RuntimeSink):
 def log_print(
     *values: object,
     sep: str = " ",
-    end: Optional[str] = "",
+    end: Optional[str] = None,
     **kw,
 ):
     if kw:
-        return print_(*values, sep, end if isinstance(end, str) else "\n", **kw)
+        return print_(*values, sep=sep, end=end if isinstance(end, str) else "\n", **kw)
     warnings.warn("print is deprecated, use logger.debug instead", stacklevel=2)
     data = f"{sep.join(map(str, values))}{end if isinstance(end, str) else ''}"
     logger.opt(depth=1).debug(data)
