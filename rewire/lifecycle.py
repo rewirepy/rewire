@@ -70,15 +70,22 @@ class LifecycleModule(Module):
             logger.info("Starting...")
             self._stopEvent.clear()
 
+        async with self.use_running(run_stop):
+            logger.info("Running")
+
+    @asynccontextmanager
+    async def use_running(self, run_stop: bool = True):
         async with MultiAsyncContextManager(self._context_managers):
-            async with anyio.create_task_group() as group:
-                for coro in self._coroutines:
-                    group.start_soon(self.async_runner, coro)
+            try:
+                async with anyio.create_task_group() as group:
+                    for coro in self._coroutines:
+                        group.start_soon(self.async_runner, coro)
 
-                self._group = group
-
-            if run_stop:
-                await self.stop()
+                    self._group = group
+                    yield
+            finally:
+                if run_stop:
+                    await self.stop()
 
     def runner(self, target: Callable[[], Any]):
         try:
@@ -109,12 +116,10 @@ class LifecycleModule(Module):
             del self._running[id(target)]
 
     @overload
-    def on_stop[TC: Callback](self) -> Callable[[TC], TC]:
-        ...
+    def on_stop[TC: Callback](self) -> Callable[[TC], TC]: ...
 
     @overload
-    def on_stop[TC: Callback](self, cb: TC) -> TC:
-        ...
+    def on_stop[TC: Callback](self, cb: TC) -> TC: ...
 
     def on_stop[TC: Callback](self, cb: TC | Any = UNSET) -> TC | Callable[[TC], TC]:
         if cb is not UNSET:
