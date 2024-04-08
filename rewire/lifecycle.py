@@ -64,17 +64,17 @@ class LifecycleModule(Module):
         return self._group
 
     async def start(self, run_stop: bool = True):
+        async with self.use_running(run_stop):
+            logger.info("Running")
+
+    @asynccontextmanager
+    async def use_running(self, run_stop: bool = True):
         with self._lock:
             self._is_running = True
 
             logger.info("Starting...")
             self._stopEvent.clear()
 
-        async with self.use_running(run_stop):
-            logger.info("Running")
-
-    @asynccontextmanager
-    async def use_running(self, run_stop: bool = True):
         async with MultiAsyncContextManager(self._context_managers):
             try:
                 async with anyio.create_task_group() as group:
