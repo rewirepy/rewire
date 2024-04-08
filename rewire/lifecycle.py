@@ -30,6 +30,7 @@ class LifecycleModule(Module):
     _stopEvent: threading.Event = PrivateAttr(default_factory=threading.Event)
     _stoppedEvent: threading.Event = PrivateAttr(default_factory=threading.Event)
     _lock: threading.RLock = PrivateAttr(default_factory=threading.RLock)
+    _asyncStopEvent: anyio.Event = PrivateAttr(default_factory=anyio.Event)
     _coroutines: List[Any] = PrivateAttr(default_factory=list)
     _onStop: List[Callable] = PrivateAttr(default_factory=list)
     _running: dict[int, Awaitable | Callable] = PrivateAttr(default_factory=dict)
@@ -64,8 +65,10 @@ class LifecycleModule(Module):
         return self._group
 
     async def start(self, run_stop: bool = True):
-        async with self.use_running(run_stop):
+        async with self.use_running(False):
             logger.info("Running")
+        if run_stop:
+            await self.stop()
 
     @asynccontextmanager
     async def use_running(self, run_stop: bool = True):
@@ -76,16 +79,16 @@ class LifecycleModule(Module):
             self._stopEvent.clear()
 
         async with MultiAsyncContextManager(self._context_managers):
-            try:
-                async with anyio.create_task_group() as group:
-                    for coro in self._coroutines:
-                        group.start_soon(self.async_runner, coro)
+            async with anyio.create_task_group() as group:
+                for coro in self._coroutines:
+                    group.start_soon(self.async_runner, coro)
 
-                    self._group = group
+                self._group = group
+                try:
                     yield
-            finally:
-                if run_stop:
-                    await self.stop()
+                finally:
+                    if run_stop:
+                        await self.stop()
 
     def runner(self, target: Callable[[], Any]):
         try:
@@ -142,7 +145,7 @@ class LifecycleModule(Module):
             return self._stoppedEvent
         logger.info("Stopping")
         self._is_running = False
-
+        self._asyncStopEvent.set()
         with self._lock:
             if self._stopEvent.is_set():
                 return self._stoppedEvent
