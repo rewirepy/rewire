@@ -145,13 +145,11 @@ ConfigLoader.add_constructor("!yaml", load_yaml_yaml)
 @overload
 def merge[K, T, KO, TO](
     source: dict[K, T], overlay: dict[KO, TO]
-) -> dict[K | KO, T | TO]:
-    ...
+) -> dict[K | KO, T | TO]: ...
 
 
 @overload
-def merge[T](source: Any, overlay: T) -> T:
-    ...
+def merge[T](source: Any, overlay: T) -> T: ...
 
 
 def merge(source: dict | list | Any, overlay: dict | list | Any):
@@ -185,7 +183,7 @@ def load_yaml(file_: str | Path):
     cwd = cwdContext.get().removesuffix("/") + "/"
     file_ = os.path.join(cwd, file_)
     with (
-        open(file_) as f,
+        open(file_, encoding="utf-8") as f,
         use_context_value(fileContext, file_),
         use_context_value(cwdContext, os.path.dirname(file_)),
     ):
@@ -339,15 +337,13 @@ class EnvironmentModule(Module):
 @overload
 def config[TBM: BaseModel](
     model: Type[TBM], *, path: Optional[str] = ".", fallback: Any = None
-) -> TBM:
-    ...
+) -> TBM: ...
 
 
 @overload
 def config[TBM: BaseModel](
     *, path: Optional[str] = ".", fallback: Any = None
-) -> Callable[[Type[TBM]], TBM]:
-    ...
+) -> Callable[[Type[TBM]], TBM]: ...
 
 
 def config(model: Any = UNSET, *, path: Optional[str] = ".", fallback: Any = None):
