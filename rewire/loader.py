@@ -32,11 +32,17 @@ class LoaderModule(Module):
 
             dir = Path(module.replace(".", "/").strip("/"))
             for file in sorted(os.listdir(dir)):
+                if not file.startswith("_"):
+                    continue
                 loc = dir / file
-                if (file.endswith(".py") and not file.startswith("_")) or (
-                    loc.is_dir() and (loc / "__init__.py").exists()
-                ):
+                is_plugin_dir = loc.is_dir() and (loc / "__init__.py").exists()
+
+                if file.endswith(".py") or is_plugin_dir:
                     self.load_file(module, file)
+                if is_plugin_dir and (cfg := dir / ".plugin.yaml").exists():
+                    config = PluginConfig.model_validate(parse_file(cfg, True))
+                    for include in config.include:
+                        self.queue.append(f"{module}.{file}.{include}")
 
             if (directory_config := dir / ".plugin.yaml").exists():
                 config = PluginConfig.model_validate(parse_file(directory_config, True))
