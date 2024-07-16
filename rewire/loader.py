@@ -31,7 +31,7 @@ class LoaderModule(Module):
             module = self.queue.pop()
 
             dir = Path(module.replace(".", "/").strip("/"))
-            for file in os.listdir(dir):
+            for file in sorted(os.listdir(dir)):
                 loc = dir / file
                 if (file.endswith(".py") and not file.startswith("_")) or (
                     loc.is_dir() and (loc / "__init__.py").exists()
