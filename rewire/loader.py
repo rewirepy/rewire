@@ -32,7 +32,7 @@ class LoaderModule(Module):
 
             dir = Path(module.replace(".", "/").strip("/"))
             for file in sorted(os.listdir(dir)):
-                if not file.startswith("_"):
+                if file.startswith("_"):
                     continue
                 loc = dir / file
                 is_plugin_dir = loc.is_dir() and (loc / "__init__.py").exists()
