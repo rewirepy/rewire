@@ -1,9 +1,11 @@
+import ast
 from contextvars import ContextVar
 from functools import lru_cache
 import json
 from os import getenv
 import os
 from pathlib import Path
+from textwrap import dedent
 from typing import (
     Annotated,
     Any,
@@ -71,22 +73,23 @@ class PyCode(BaseModel):
 
 class PyExecCode(PyCode):
     def execute(self):
-        container = SimpleStore[Callable]()
+        def function(self, this) -> Any:
+            raise RuntimeError("This function should be patched")
 
-        exec(
-            "def __pyexec():\n"
-            + "\n".join(f" {x}" for x in self.code.splitlines())
-            + "\n__container.set(__pyexec)",
-            {
-                "this": rootContext.get(),
-                "self": rootContext.get(),
-                "__container": container,
-            },
-            self.functions(),
-        )
-        fn = container.get()
-        assert fn
-        return fn()
+        function_code = ast.parse(dedent(inspect.getsource(function)))
+        assert isinstance(function_code.body[0], ast.FunctionDef)
+
+        function_code.body[0].body = ast.parse(self.code).body
+        filename = f"<!pyexec {hex(id(self))}>"
+        compiled_function = compile(function_code, filename, "exec")
+        for const in compiled_function.co_consts:
+            if not isinstance(const, type(compiled_function)):
+                continue
+            if const.co_filename == filename and const.co_name == function.__name__:
+                function.__code__ = const
+                break
+
+        return function(rootContext.get(), rootContext.get())
 
 
 class EvalDict(dict):
@@ -402,7 +405,7 @@ class ConfigDependency(BaseModel):
             async def resolve():
                 return config(cls, path=cls.__location__, fallback=cls.__fallback__)
 
-            cls._dependency = Dependency(
+            cls._dependency = Dependency[Self](
                 cb=resolve, type=cls, label=f"Config ({cls.__module__}.{cls.__name__})"
             )
         return cls._dependency
@@ -410,7 +413,7 @@ class ConfigDependency(BaseModel):
     @classproperty
     @classmethod
     def Value(cls) -> Type[Self]:
-        return Annotated[cls, TypeRef(type=cls)]
+        return Annotated[cls, TypeRef(type=cls)]  # type: ignore
 
     @classmethod
     def __dependency__(cls):
