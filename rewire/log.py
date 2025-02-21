@@ -42,6 +42,7 @@ else:
     RotationFunction = Any
     RetentionFunction = Any
     CompressionFunction = Any
+    Message = Any
 
 logger = loguru.logger
 
