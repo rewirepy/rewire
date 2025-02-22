@@ -23,8 +23,7 @@ from rewire.context import CTX
 from rewire.space import Module
 
 
-async def noop():
-    ...
+async def noop(): ...
 
 
 class SolveError(RuntimeError):
@@ -62,15 +61,14 @@ class TypeRef(BaseModel):
 AnyRef = TypeRef | DependencyRef
 
 
-class InjectMarker(BaseModel):
-    ...
+class InjectMarker(BaseModel): ...
 
 
 class Dependency[T](DependencyRef):
     id: UUID = Field(default_factory=uuid4)
-    state: Literal[
-        "pending", "linked", "waiting", "running", "done", "skipped"
-    ] = "pending"
+    state: Literal["pending", "linked", "waiting", "running", "done", "skipped"] = (
+        "pending"
+    )
     # type of this dependency. (for by type injection)
     type: Any = None
     # a flag indicating whether this dependency creates a new type or just wraps an existing one.
@@ -253,8 +251,9 @@ class Dependencies(BaseModel):
 
                 deps = self._index(solved, deps)
 
+                flatten_cache = {}
                 for dependency in deps:
-                    self.flatten_dependency(dependency)
+                    self.flatten_dependency(dependency, cache=flatten_cache)
 
                 async with create_task_group() as tg:
                     for dependency in deps:
@@ -269,9 +268,9 @@ class Dependencies(BaseModel):
             source = selector.resolve(self)
             self._by_id[source.id] = dependency
             if self._by_type.get(source.type, None) is source:
-                assert (
-                    dependency.type_constructor
-                ), "Replacing dependency should be type constructor"
+                assert dependency.type_constructor, (
+                    "Replacing dependency should be type constructor"
+                )
                 self._by_type[source.type] = dependency
             self._index_one(dependency)
             removed.add(source.id)
@@ -286,16 +285,24 @@ class Dependencies(BaseModel):
             self._by_type.setdefault(dependency.type, dependency)
 
     def flatten_dependency(
-        self, dependency: Dependency, visited: set[UUID] = set()
+        self,
+        dependency: Dependency,
+        visited: set[UUID] = set(),
+        cache: dict | None = None,
     ) -> set[UUID]:
+        if cache is None:
+            cache = {}
+        if dependency.id in cache:
+            return cache[dependency.id]
         if dependency.id in visited:
             raise SolveError("Found self reference/loop in dependencies")
 
         visited = visited | {dependency.id}
         result = visited
         for dep in dependency._dependencies:
-            result = result | self.flatten_dependency(dep, visited)
+            result = result | self.flatten_dependency(dep, visited, cache)
 
+        cache[dependency.id] = result
         return result
 
     def add(self, *dependencies: "Dependencies | Dependency | Dependable"):
