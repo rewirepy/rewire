@@ -73,23 +73,12 @@ class PyCode(BaseModel):
 
 class PyExecCode(PyCode):
     def execute(self):
-        def function(self, this) -> Any:
-            raise RuntimeError("This function should be patched")
-
-        function_code = ast.parse(dedent(inspect.getsource(function)))
-        assert isinstance(function_code.body[0], ast.FunctionDef)
-
-        function_code.body[0].body = ast.parse(self.code).body
-        filename = f"<!pyexec {hex(id(self))}>"
-        compiled_function = compile(function_code, filename, "exec")
-        for const in compiled_function.co_consts:
-            if not isinstance(const, type(compiled_function)):
-                continue
-            if const.co_filename == filename and const.co_name == function.__name__:
-                function.__code__ = const
-                break
-
-        return function(rootContext.get(), rootContext.get())
+        function = ast.parse("def __pyexec(): ...")
+        assert isinstance(function.body[0], ast.FunctionDef)
+        function.body[0].body = ast.parse(self.code).body
+        scope = {}
+        exec(compile(function, "!pyexec", "exec"), scope)
+        return scope["__pyexec"]()
 
 
 class EvalDict(dict):
@@ -118,7 +107,7 @@ class EvalDict(dict):
 def load_yaml_env(loader, node: yaml.ScalarNode):
     value = getenv(*node.value.split(":", 1))
     if value is None:
-        raise EnvRequired(f'env variable {node.value.split(":", 1)[0]!r} required')
+        raise EnvRequired(f"env variable {node.value.split(':', 1)[0]!r} required")
     return value
 
 
