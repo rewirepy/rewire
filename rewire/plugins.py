@@ -158,7 +158,7 @@ def simple_plugin(
     load: bool = True,
     bind: bool = True,
     loc: Path | None = None,
-):
+) -> Plugin:
     if not name:
         name = "unknown"
         for i in range(1, 10):
